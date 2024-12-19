@@ -46,6 +46,7 @@ body {
 
 .song-title {
     flex-grow: 1;
+    margin-right: 10px;
 }
 
 .song-category {
@@ -129,4 +130,29 @@ body {
 .highlight {
     background-color: #fff3cd;
     padding: 0 2px;
+}
+
+.remove-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.remove-btn:hover {
+    opacity: 1;
+}
+
+.show-song-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Override pointer cursor for buttons inside search results */
+.search-result-item button {
+    cursor: pointer;
 }

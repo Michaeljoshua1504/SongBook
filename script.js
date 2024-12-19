@@ -13,8 +13,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchPreview = document.getElementById('searchPreview');
     const clearSearchBtn = document.getElementById('clearSearchBtn');
 
+    const HIDDEN_SONGS_KEY = 'hiddenSongs';
+
     // Load saved songs when page loads
-    loadSavedSongs();
+    loadSavedSongs().catch(error => {
+        console.error('Error in loadSavedSongs:', error);
+    });
 
     // Show upload form when upload button is clicked
     uploadBtn.addEventListener('click', function() {
@@ -84,15 +88,64 @@ document.addEventListener('DOMContentLoaded', function() {
             searchPreview.innerHTML = matchingSongs
                 .map(song => {
                     const highlightedTitle = highlightMatch(song.title, searchTerm);
+                    const isHidden = document.querySelector(
+                        `.song-card[data-title="${song.title}"].d-none`
+                    );
+                    
                     return `
-                        <div class="search-result-item" data-category="${song.category}">
-                            ${highlightedTitle}
-                            <small class="text-muted ms-2">(${song.category})</small>
+                        <div class="search-result-item" data-category="${song.category}" 
+                             data-title="${song.title}" data-lyrics="${song.lyrics}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    ${highlightedTitle}
+                                    <small class="text-muted ms-2">(${song.category})</small>
+                                </div>
+                                ${isHidden ? `
+                                    <button class="btn btn-sm btn-outline-primary show-song-btn">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                                        </svg>
+                                        Show in Home
+                                    </button>
+                                ` : ''}
+                            </div>
                         </div>
                     `;
                 })
                 .join('');
             searchPreview.classList.remove('d-none');
+
+            // Add event listeners to show buttons
+            const showButtons = searchPreview.querySelectorAll('.show-song-btn');
+            showButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const resultItem = this.closest('.search-result-item');
+                    const title = resultItem.dataset.title;
+                    const category = resultItem.dataset.category;
+                    const lyrics = resultItem.dataset.lyrics;
+
+                    // Find and show the hidden song card
+                    const hiddenCard = document.querySelector(
+                        `.song-card[data-title="${title}"].d-none`
+                    );
+                    if (hiddenCard) {
+                        hiddenCard.classList.remove('d-none');
+                        // Remove from hidden songs list
+                        let hiddenSongs = JSON.parse(localStorage.getItem(HIDDEN_SONGS_KEY) || '[]');
+                        hiddenSongs = hiddenSongs.filter(songTitle => songTitle !== title);
+                        localStorage.setItem(HIDDEN_SONGS_KEY, JSON.stringify(hiddenSongs));
+                        
+                        // Switch to appropriate tab
+                        document.getElementById(`${category}-tab`).click();
+                        // Clear search
+                        searchInput.value = '';
+                        searchPreview.classList.add('d-none');
+                        clearSearchBtn.classList.add('d-none');
+                    }
+                });
+            });
         } else {
             searchPreview.innerHTML = `
                 <div class="search-result-item text-muted">
@@ -145,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function createSongCard(title, category, lyrics) {
         const div = document.createElement('div');
         div.className = 'song-card';
-        div.draggable = true; // Make card draggable
+        div.draggable = true;
         div.dataset.title = title;
         div.dataset.category = category;
         div.dataset.lyrics = lyrics;
@@ -159,9 +212,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="song-title">${title}</div>
                 <span class="song-category badge bg-secondary">${category}</span>
+                <button class="btn btn-link text-danger remove-btn ms-2" title="Remove from view">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash" viewBox="0 0 16 16">
+                        <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486z"/>
+                        <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
+                        <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708"/>
+                    </svg>
+                </button>
             </div>
             <div class="song-lyrics">${lyrics}</div>
         `;
+
+        // Add event listener for remove button
+        const removeBtn = div.querySelector('.remove-btn');
+        removeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            div.classList.add('d-none');
+            // Save hidden state
+            let hiddenSongs = JSON.parse(localStorage.getItem(HIDDEN_SONGS_KEY) || '[]');
+            if (!hiddenSongs.includes(title)) {
+                hiddenSongs.push(title);
+                localStorage.setItem(HIDDEN_SONGS_KEY, JSON.stringify(hiddenSongs));
+            }
+        });
 
         // Add drag and drop event listeners
         div.addEventListener('dragstart', handleDragStart);
@@ -208,34 +281,133 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Function to save the new order to localStorage
-    function saveNewOrder() {
-        const songs = [];
-        const carolsCards = [...document.querySelectorAll('#carolsList .song-card')];
-        const christmasCards = [...document.querySelectorAll('#christmasList .song-card')];
-        
-        [...carolsCards, ...christmasCards].forEach(card => {
-            songs.push({
-                title: card.dataset.title,
-                category: card.dataset.category,
-                lyrics: card.dataset.lyrics
+    async function saveNewOrder() {
+        try {
+            const songs = [];
+            const carolsCards = [...document.querySelectorAll('#carolsList .song-card')];
+            const christmasCards = [...document.querySelectorAll('#christmasList .song-card')];
+            
+            [...carolsCards, ...christmasCards].forEach(card => {
+                if (!card.classList.contains('d-none')) {
+                    songs.push({
+                        title: card.dataset.title,
+                        category: card.dataset.category,
+                        lyrics: card.dataset.lyrics
+                    });
+                }
             });
-        });
-        
-        localStorage.setItem('songs', JSON.stringify(songs));
+            
+            // Save to localStorage
+            localStorage.setItem('songs', JSON.stringify(songs));
+            
+            // Create updated songs.txt content
+            const songsData = {
+                songs: songs
+            };
+            const dataStr = JSON.stringify(songsData, null, 2);
+
+            // For GitHub: Create a downloadable file
+            const blob = new Blob([dataStr], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'songs.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('Please replace the songs.txt file in your GitHub repository with the downloaded file to update the song order.');
+        } catch (error) {
+            console.error('Error saving order:', error);
+            alert('Error saving order. Please try again.');
+        }
     }
 
     // Function to save song to localStorage
-    function saveSong(title, category, lyrics) {
-        let songs = JSON.parse(localStorage.getItem('songs') || '[]');
-        songs.unshift({ title, category, lyrics }); // Add new song at the beginning
-        localStorage.setItem('songs', JSON.stringify(songs));
+    async function saveSong(title, category, lyrics) {
+        try {
+            // First load existing songs from songs.txt
+            const response = await fetch('songs.txt');
+            const text = await response.text();
+            const data = JSON.parse(text);
+            let songs = data.songs || [];
+
+            // Add new song at the beginning
+            songs.unshift({ title, category, lyrics });
+
+            // Save to localStorage
+            localStorage.setItem('songs', JSON.stringify(songs));
+
+            // Create updated songs.txt content
+            const songsData = {
+                songs: songs
+            };
+            const dataStr = JSON.stringify(songsData, null, 2);
+
+            // For GitHub: Create a downloadable file
+            const blob = new Blob([dataStr], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'songs.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Show instruction alert
+            alert('Please replace the songs.txt file in your GitHub repository with the downloaded file to update the songs database.');
+        } catch (error) {
+            console.error('Error saving song:', error);
+            alert('Error saving song. Please try again.');
+        }
     }
 
     // Function to load saved songs
-    function loadSavedSongs() {
-        const songs = JSON.parse(localStorage.getItem('songs') || '[]');
-        
-        // Clear existing songs
+    async function loadSavedSongs() {
+        try {
+            const response = await fetch('songs.txt');
+            const text = await response.text();
+            const data = JSON.parse(text);
+            const songs = data.songs;
+            
+            // Get hidden songs
+            const hiddenSongs = JSON.parse(localStorage.getItem(HIDDEN_SONGS_KEY) || '[]');
+            
+            // Save to localStorage for faster access
+            localStorage.setItem('songs', JSON.stringify(songs));
+            
+            // Clear existing songs
+            carolsList.innerHTML = '';
+            christmasList.innerHTML = '';
+            
+            // Display songs
+            songs.forEach(song => {
+                const songCard = createSongCard(song.title, song.category, song.lyrics);
+                
+                // Hide if in hidden songs list
+                if (hiddenSongs.includes(song.title)) {
+                    songCard.classList.add('d-none');
+                }
+                
+                if (song.category === 'carols') {
+                    carolsList.appendChild(songCard);
+                } else if (song.category === 'christmas') {
+                    christmasList.appendChild(songCard);
+                }
+            });
+        } catch (error) {
+            console.error('Error loading songs:', error);
+            const songs = JSON.parse(localStorage.getItem('songs') || '[]');
+            displaySongs(songs);
+        }
+    }
+
+    // Add new function to display songs
+    function displaySongs(songs) {
         carolsList.innerHTML = '';
         christmasList.innerHTML = '';
         

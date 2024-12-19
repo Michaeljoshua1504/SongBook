@@ -1,0 +1,14 @@
+{
+  "songs": [
+    {
+      "title": "Silent Night",
+      "category": "carols",
+      "lyrics": "Silent night, holy night\nAll is calm, all is bright\nRound yon Virgin Mother and Child\nHoly Infant so tender and mild\nSleep in heavenly peace\nSleep in heavenly peace"
+    },
+    {
+      "title": "Jingle Bells",
+      "category": "christmas",
+      "lyrics": "Dashing through the snow\nIn a one-horse open sleigh\nO'er the fields we go\nLaughing all the way\nBells on bobtail ring\nMaking spirits bright\nWhat fun it is to ride and sing\nA sleighing song tonight!"
+    }
+  ]
+} 
