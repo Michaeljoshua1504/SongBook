@@ -1,0 +1,132 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.upload-form {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.song-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    cursor: move;
+    user-select: none;
+    transition: box-shadow 0.2s ease;
+}
+
+.song-card.dragging {
+    opacity: 0.5;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.drag-handle {
+    cursor: move;
+    padding: 5px;
+    margin-right: 10px;
+    color: #6c757d;
+}
+
+.drag-handle:hover {
+    color: #0d6efd;
+}
+
+.song-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.song-title {
+    flex-grow: 1;
+}
+
+.song-category {
+    text-transform: capitalize;
+    font-size: 0.9rem;
+}
+
+.song-lyrics {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+} 
+
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    margin-bottom: -2px;
+    border: none;
+    color: #6c757d;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom: 2px solid #0d6efd;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    isolation: isolate;
+}
+
+.tab-content {
+    padding-top: 20px;
+}
+
+.search-container {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.search-preview {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: #f8f9fa;
+}
+
+.highlight {
+    background-color: #fff3cd;
+    padding: 0 2px;
+}
