@@ -325,10 +325,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Function to save song to localStorage
+    // Update the saveSong function
     async function saveSong(title, category, lyrics) {
         try {
-            // First load existing songs from songs.txt
+            // First get current songs from songs.txt
             const response = await fetch('songs.txt');
             const text = await response.text();
             const data = JSON.parse(text);
@@ -340,13 +340,72 @@ document.addEventListener('DOMContentLoaded', function() {
             // Save to localStorage
             localStorage.setItem('songs', JSON.stringify(songs));
 
-            // Create updated songs.txt content
+            // Update songs.txt in GitHub repository
+            const songsData = {
+                songs: songs
+            };
+            
+            console.log('Attempting to update GitHub file...');
+            
+            // Get the current file's SHA
+            const currentFileResponse = await fetch(
+                `https://api.github.com/repos/${config.REPO_OWNER}/${config.REPO_NAME}/contents/songs.txt`,
+                {
+                    headers: {
+                        'Authorization': `token ${config.GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                }
+            );
+            
+            if (!currentFileResponse.ok) {
+                const errorText = await currentFileResponse.text();
+                throw new Error(`Failed to get current file: ${errorText}`);
+            }
+            
+            const currentFile = await currentFileResponse.json();
+            
+            console.log('Got current file SHA, attempting to update...');
+            
+            // Update the file in GitHub
+            const updateResponse = await fetch(
+                `https://api.github.com/repos/${config.REPO_OWNER}/${config.REPO_NAME}/contents/songs.txt`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${config.GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        message: `Add song: ${title}`,
+                        content: btoa(JSON.stringify(songsData, null, 2)),
+                        sha: currentFile.sha
+                    })
+                }
+            );
+
+            if (!updateResponse.ok) {
+                const errorText = await updateResponse.text();
+                throw new Error(`Failed to update file: ${errorText}`);
+            }
+
+            console.log('Song successfully added to GitHub!');
+            alert('Song added successfully to both local storage and GitHub!');
+        } catch (error) {
+            console.error('Detailed error:', error);
+            alert(`Error saving song: ${error.message}\nThe song is saved locally but not uploaded to GitHub.`);
+        }
+    }
+
+    // Add a new function to download all songs
+    function downloadSongsFile() {
+        try {
+            const songs = JSON.parse(localStorage.getItem('songs') || '[]');
             const songsData = {
                 songs: songs
             };
             const dataStr = JSON.stringify(songsData, null, 2);
-
-            // For GitHub: Create a downloadable file
             const blob = new Blob([dataStr], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             
@@ -357,14 +416,21 @@ document.addEventListener('DOMContentLoaded', function() {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-
-            // Show instruction alert
-            alert('Please replace the songs.txt file in your GitHub repository with the downloaded file to update the songs database.');
         } catch (error) {
-            console.error('Error saving song:', error);
-            alert('Error saving song. Please try again.');
+            console.error('Error downloading songs:', error);
+            alert('Error downloading songs file. Please try again.');
         }
     }
+
+    // Add a download button next to the upload button in the HTML
+    document.querySelector('.text-center.mb-4').insertAdjacentHTML('beforeend', `
+        <button id="downloadBtn" class="btn btn-secondary ms-2">
+            Download Songs Database
+        </button>
+    `);
+
+    // Add click handler for download button
+    document.getElementById('downloadBtn').addEventListener('click', downloadSongsFile);
 
     // Function to load saved songs
     async function loadSavedSongs() {
