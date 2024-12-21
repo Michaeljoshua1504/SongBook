@@ -309,17 +309,43 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update the saveSong function
     async function saveSong(title, category, lyrics) {
         try {
-            // Get current songs from localStorage
-            let songs = JSON.parse(localStorage.getItem('songs') || '[]');
+            // Get current songs from songs.txt
+            const response = await fetch('songs.txt');
+            const text = await response.text();
+            const data = JSON.parse(text);
+            let songs = data.songs || [];
 
             // Add new song at the beginning
             songs.unshift({ title, category, lyrics });
 
-            // Save to localStorage
-            localStorage.setItem('songs', JSON.stringify(songs));
+            // Create the updated songs data
+            const songsData = JSON.stringify({ songs: songs }, null, 2);
 
-            console.log('Current songs data:', JSON.stringify({ songs: songs }, null, 2));
-            alert('Song added successfully! The songs are saved locally.');
+            try {
+                // Request permission to access files
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: 'songs.txt',
+                    types: [{
+                        description: 'Text Files',
+                        accept: {'text/plain': ['.txt']},
+                    }],
+                });
+
+                // Create a FileSystemWritableFileStream to write to
+                const writable = await handle.createWritable();
+
+                // Write the contents
+                await writable.write(songsData);
+                await writable.close();
+
+                // Also update localStorage
+                localStorage.setItem('songs', JSON.stringify(songs));
+                
+                alert('Song added successfully and saved to songs.txt!');
+            } catch (writeError) {
+                console.error('Error writing to file:', writeError);
+                alert('Could not save to songs.txt. Please check console for details.');
+            }
         } catch (error) {
             console.error('Error saving song:', error);
             alert('Error saving song. Please try again.');
@@ -329,38 +355,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to load saved songs
     async function loadSavedSongs() {
         try {
+            // Load from songs.txt first
             const response = await fetch('songs.txt');
             const text = await response.text();
             const data = JSON.parse(text);
             const songs = data.songs;
             
-            // Get hidden songs
-            const hiddenSongs = JSON.parse(localStorage.getItem(HIDDEN_SONGS_KEY) || '[]');
-            
-            // Save to localStorage for faster access
+            // Save to localStorage
             localStorage.setItem('songs', JSON.stringify(songs));
             
-            // Clear existing songs
-            carolsList.innerHTML = '';
-            christmasList.innerHTML = '';
-            
             // Display songs
-            songs.forEach(song => {
-                const songCard = createSongCard(song.title, song.category, song.lyrics);
-                
-                // Hide if in hidden songs list
-                if (hiddenSongs.includes(song.title)) {
-                    songCard.classList.add('d-none');
-                }
-                
-                if (song.category === 'carols') {
-                    carolsList.appendChild(songCard);
-                } else if (song.category === 'christmas') {
-                    christmasList.appendChild(songCard);
-                }
-            });
+            displaySongs(songs);
         } catch (error) {
             console.error('Error loading songs:', error);
+            // Fallback to localStorage if songs.txt fails
             const songs = JSON.parse(localStorage.getItem('songs') || '[]');
             displaySongs(songs);
         }
