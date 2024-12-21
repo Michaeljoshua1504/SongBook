@@ -318,34 +318,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add new song at the beginning
             songs.unshift({ title, category, lyrics });
 
+            // Save to localStorage
+            localStorage.setItem('songs', JSON.stringify(songs));
+
             // Create the updated songs data
             const songsData = JSON.stringify({ songs: songs }, null, 2);
 
-            try {
-                // Request permission to access files
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: 'songs.txt',
-                    types: [{
-                        description: 'Text Files',
-                        accept: {'text/plain': ['.txt']},
-                    }],
-                });
+            // Log the data that should be in songs.txt
+            console.log('Updated songs.txt content:');
+            console.log(songsData);
 
-                // Create a FileSystemWritableFileStream to write to
-                const writable = await handle.createWritable();
-
-                // Write the contents
-                await writable.write(songsData);
-                await writable.close();
-
-                // Also update localStorage
-                localStorage.setItem('songs', JSON.stringify(songs));
-                
-                alert('Song added successfully and saved to songs.txt!');
-            } catch (writeError) {
-                console.error('Error writing to file:', writeError);
-                alert('Could not save to songs.txt. Please check console for details.');
-            }
+            alert('Song added successfully! Check console (F12) for updated songs data.');
         } catch (error) {
             console.error('Error saving song:', error);
             alert('Error saving song. Please try again.');
